@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이미지 슬라이더</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 'Pretendard' 폰트 import 및 사용 */
+        @import url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
+        body {
+            font-family: 'Pretendard-Regular', sans-serif;
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Solvay_conference_1927.jpg/960px-Solvay_conference_1927.jpg');
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center;
+        }
+        
+        /* 슬라이더 컨테이너 커스텀 스크롤바 */
+        .slider-container::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .slider-container::-webkit-scrollbar-track {
+            background: #e5e7eb;
+            border-radius: 10px;
+        }
+
+        .slider-container::-webkit-scrollbar-thumb {
+            background: #9ca3af;
+            border-radius: 10px;
+        }
+
+        /* 팝업 오버레이 애니메이션 */
+        .popup-overlay {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .popup-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* 팝업 컨테이너 애니메이션 */
+        .popup-container {
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .popup-overlay.active .popup-container {
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <!-- 메인 컨테이너 -->
+    <div class="w-full max-w-4xl bg-white rounded-2xl shadow-xl p-8">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">🥇1위~20위</h1>
+
+        <!-- 슬라이더 컨테이너 -->
+        <div id="slider-container" class="relative flex overflow-x-auto gap-4 p-4 -mx-4 slider-container">
+            <!-- 이미지 아이템들 (JavaScript에 의해 동적으로 추가될 예정) -->
+        </div>
+
+        <!-- 슬라이더 탐색 버튼 -->
+        <div class="flex justify-center mt-6 space-x-4">
+            <button id="prevBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-full transition-colors duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
+            <button id="nextBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-full transition-colors duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- 팝업 오버레이 -->
+    <div id="popup-overlay" class="popup-overlay fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+        <!-- 팝업 컨테이너 -->
+        <div class="popup-container bg-white rounded-2xl shadow-2xl overflow-hidden max-w-3xl w-full max-h-[90vh] flex flex-col">
+            <!-- 닫기 버튼 -->
+            <div class="flex justify-end p-4">
+                <button id="close-popup" class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <!-- 팝업 이미지 및 설명 컨테이너 -->
+            <div class="flex-grow overflow-y-auto">
+                <img id="popup-image" src="" alt="확대 이미지" class="w-full h-auto object-cover rounded-t-lg">
+                <div class="p-6">
+                    <h2 id="popup-title" class="text-2xl font-bold text-gray-800 mb-2"></h2>
+                    <p id="popup-description" class="text-gray-600 text-base leading-relaxed"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 이미지 데이터 배열 (오류가 발생했던 이미지 URL을 안정적인 링크로 교체했습니다.)
+        const images = [
+
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/f/f9/The_original_1920_English_publication_of_the_paper..jpg',
+                title: '1위 알베르트 아인슈타인의 특수 상대성 이론(1905)',
+                description: '빛의 속도는 누구에게나 같습니다. 하지만 움직이는 속도에 따라 시간과 길이가 다르게 보일 수 있다는 것을 알려준 이론입니다. 이 발견은 현대 물리학의 기초가 되었습니다.<br>사진 출처:https://en.wikipedia.org/wiki/Relativity:_The_Special_and_the_General_Theory'
+            },
+            {
+                url: 'https://postfiles.pstatic.net/MjAyNTA4MjJfMjM1/MDAxNzU1ODI5ODczNzQy.eaWY6q66eyo5QB65TVtjTzHijFiZwHCl73ymMkekE44g.Tf2A1WGw0XIvMWz0k05fnqY3Yz3R9rAuQ5I6uYOaxIIg.PNG/2._%EB%89%B4%ED%84%B4_%EB%A7%8C%EC%9C%A0%EC%9D%B8%EB%A0%A5%EB%B2%95%EC%B9%99.png?type=w3840', 
+                title: '2위 아이작 뉴턴의 만유인력의 법칙(1687)',
+                description: '뉴턴은 모든 물체가 서로 끌어당기는 힘, "만유인력"을 설명했습니다. 이 법칙 덕분에 떨어지는 사과부터 달과 지구의 움직임까지 이해할 수 있게 되었습니다. <br>사진 출처:생성형 AI Gemini 2.0 사용'
+            },
+            {
+                url: 'https://cdn.topclass.chosun.com/news/photo/201903/10114_26646_4348.jpg',
+                title: '3위 니콜라우스 코페르니쿠스의 지동설(1543)',
+                description: '코페르니쿠스는 지구가 우주의 중심이 아니라 태양이 중심이라고 주장했습니다. 지구와 행성들이 태양 주위를 돈다는 사실을 처음으로 제대로 설명했습니다.<br>사진 출처: https://blogs.slv.vic.gov.au/arts/books-that-changed-the-world/'
+            },
+            {
+                url: 'https://ichef.bbci.co.uk/images/ic/976xn/p02kqy1g.jpg',
+                title: '4위 찰스 다윈의 진화론(1959)',
+                description: '다윈은 모든 생물이 오랜 시간에 걸쳐 조금씩 변해왔다는 사실을 밝혔습니다. 더 잘 살아남은 개체가 번식한다는 과정을 "자연선택"이라고 불렀습니다. <br>사진 출처: https://www.bbc.co.uk/teach/articles/z7rvxyc'
+            },
+            {
+                url: 'https://img1.yna.co.kr/etc/inner/KR/2022/04/01/AKR20220401057400009_01_i_P4.jpg',
+                title: '5위 인간 게놈 프로젝트(2003 완료)',
+                description: '과학자들은 사람의 DNA 약 30억 개 정보를 모두 해독했습니다. 이 연구는 질병을 이해하고 치료하는 데 큰 도움이 되었습니다.<br>사진 출처: 연합뉴스'
+            },
+            {
+                url: 'https://i.guim.co.uk/img/media/5f812d74e5e4cbca0d17b634fc59fadf330d1a72/0_0_4320_2592/master/4320.jpg?width=620&dpr=1&s=none&crop=none',
+                title: '6위 제임스 클러크 맥스웰의 방정식(1864)',
+                description: '맥스웰은 전기와 자기를 하나로 묶는 네 개의 방정식을 만들었습니다. 덕분에 빛이 전자기파라는 사실을 알게 되었습니다. <br>사진 출처: The Guardian'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Pierre_Curie_%281859-1906%29_en_Marie_Curie_%281867-1934%29_in_hun_laboratorium_in_de_Hogeschool_voor%2C_SFA001020723.jpg/640px-Pierre_Curie_%281859-1906%29_en_Marie_Curie_%281867-1934%29_in_hun_laboratorium_in_de_Hogeschool_voor%2C_SFA001020723.jpg',
+                title: '7위 마리 퀴리의 방사성 연구(1898~1903)',
+                description: '퀴리는 새로운 방사성 원소인 폴로늄과 라듐을 발견했습니다. 이 연구는 방사선 치료와 현대 과학 발전에 큰 영향을 주었습니다. <br>사진 출처: 위키미디어, 퍼블릭 도메인'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Synthetic_Production_of_Penicillin_TR1468.jpg/800px-Synthetic_Production_of_Penicillin_TR1468.jpg',
+                title: '8위 알렉산더 플레밍의 페니실린 발견(1928)',
+                description: '플레밍은 곰팡이에서 최초의 항생제 "페니실린"을 발견했습니다. 이 덕분에 많은 사람들의 생명을 구할 수 있었습니다. <br>사진 출처: 위키미디어, 퍼블릭 도메인, By Official photographer - http://media.iwm.org.uk/iwm/mediaLib//32/media-32192/large.jpg This photograph TR 1468 comes from the collections of the Imperial War Museums.'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Nernst%2C_Einstein%2C_Planck%2C_Millikan%2C_Laue_in_1931.jpg/500px-Nernst%2C_Einstein%2C_Planck%2C_Millikan%2C_Laue_in_1931.jpg',
+                title: '9위 막스 플랑크의 양자론(1900)',
+                description: '플랑크는 에너지가 잘게 나누어진 단위(양자)로 움직인다고 설명했습니다. 이 이론은 고전 물리학으로 설명할 수 없던 현상을 해결했습니다. <br>사진 출처: 위키피디아, 퍼블릭 도메인 / 왼쪽에서 오른쪽으로: 네른스트, 아인슈타인, 플랑크, 로버트 밀리컨, 폰 라우에; 폰 라우에가 초대한 만찬에서, 베를린 1931년 11월 11일'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Sistema_CRISPR-Cas9.png/960px-Sistema_CRISPR-Cas9.png?20230509152658',
+                title: '10위 유전자 편집 기술 (CRISP-Cas9, 2012)',
+                description: '과학자들은 CRISPR-Cas9 단백질을 발견하여 원하는 DNA를 정확히 자르고 수정할 수 있게 되었습니다. 이 기술은 유전병 치료와 생명과학 발전에 큰 변화를 주었습니다. <br>사진 출처: 위키미디어, By Laura Parra Villar- Reproducción Asistida ORG'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/WWW-LetShare.svg/250px-WWW-LetShare.svg.png',
+                title: '11위 월드 와이드 웹 발명(1989)',
+                description: '팀 버너스-리는 인터넷에서 정보를 쉽게 찾고 연결할 수 있는 월드 와이드 웹을 발명했습니다. 이 발명은 전 세계 사람들이 인터넷으로 소통하는 방식을 바꾸었습니다. <br>사진 출처: 위키미디어, By Fakefunk , CC BY-SA 4.0'
+            },
+            {
+                url: 'https://www.bizhankook.com/upload/bk/article/202109/thumb/22580-53733-sampleM.jpg',
+                title: '12위 갈릴레오 갈릴레의의 관측 천문학(1609~1610)',
+                description: '갈릴레이는 망원경으로 천체를 관찰했습니다. 그는 목성의 위성과 금성의 위상 변화를 발견하여 지동설을 뒷받침했습니다. <br>사진 출처: 위키미디어, 퍼블릭 도메인'
+            },
+            {
+                url: 'https://nypost.com/wp-content/uploads/sites/2/2023/01/01fappleart2.C.jpg?resize=1024,991&quality=75&strip=all',
+                title: '13위 아이폰 발표(2007)',
+                description: '스티브 잡스는 2007년 아이폰을 발표했습니다. 아이폰은 스마트폰 시대를 열어 개인 통신과 생활 방식을 바꾸었습니다. <br>사진 출처: 위키미디어, By New York Post'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/8/8d/Trait%C3%A9_%C3%A9l%C3%A9mentaire_de_chimie_-_Lavoisier_-_Tom._I_Pl._IV_Fig._1.jpg',
+                title: '14위 앙투안 라부아지에의 근대 화학(1789)',
+                description: '라부아지에는 질량 보존의 법칙과 원소 개념을 설명했습니다. 그의 연구는 현대 화학의 뿌리가 되었습니다. <br>사진 출처: 위키미디어, 퍼블릭 도메인'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Colour_18-col_PT_with_labels.png/960px-Colour_18-col_PT_with_labels.png?20240821140756',
+                title: '15위 멘델레예프의 주기율표(1869)',
+                description: '멘델레예프는 원소를 성질에 따라 배열한 주기율표를 만들었습니다. 이 표는 아직 발견되지 않은 원소의 성질까지 예측할 수 있게 했습니다. <br>사진 출처: 위키미디어, By Sandbh - 자작, CC BY-SA 4.0'
+            },
+            {
+                url: 'https://pds.joongang.co.kr/news/component/htmlphoto_mmdata/201507/04/htm_201507041741220102011.jpg',
+                title: '16위 루이 파스퇴르의 광견병 백신(1885)',
+                description: '파스퇴르는 광견병 백신을 만들어 예방 의학의 기초를 세웠습니다. 이 발견은 감염병 치료와 예방에 큰 전환점이 되었습니다. <br>사진 출처: 중앙 일보'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/4/48/Boyle%27s_law_final.gif',
+                title: '17위 로버트 보일의 기체 법칙(1662)',
+                description: '보일은 기체의 부피가 압력에 반비례한다는 사실을 발견했습니다. 이 법칙은 기체의 성질을 과학적으로 이해하는 기초가 되었습니다. <br>사진 출처: 위키미디어, 퍼블릭 도메인'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/JKepler.jpg/800px-JKepler.jpg',
+                title: '18위 요하네스 케플러의 행성 운동 법칙(1864)',
+                description: '케플러는 행성이 태양 주위를 타원 궤도로 돌며 속도가 변한다는 세 가지 법칙을 발표했습니다. 이 발견은 천문학의 정확도를 높이고, 인공위성 운동에도 적용되었습니다. <br>사진 출처: 위키미디어, 퍼블릭 도메인'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/1/1c/Induction_experiment.png',
+                title: '19위 마이클 패러데이의 전자기 유도 현상(1831)',
+                description: '패러데이는 자기장이 변할 때 전기가 생긴다는 사실을 발견했습니다. 이 원리는 발전기와 변압기의 기초가 되었습니다.  <br>사진 출처:  위키미디어, 퍼블릭 도메인'
+            },
+            {
+                url: 'https://cds.cern.ch/record/628469/files/9710002_10.jpeg?subformat=icon-640',
+                title: '20위 힉스 보손 발견(2012)',
+                description: '힉스 보손은 입자에 질량을 주는 힉스 장을 증명하는 입자입니다. 2012년 대형 강입자 충돌기에서 발견되어 현대 물리학의 중요한 이론을 확인했습니다. <br>사진 출처: https://cds.cern.ch/record/628469'
+            }
+        ];
+
+        // DOM 요소 가져오기
+        const sliderContainer = document.getElementById('slider-container');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const popupOverlay = document.getElementById('popup-overlay');
+        const closePopupBtn = document.getElementById('close-popup');
+        const popupImage = document.getElementById('popup-image');
+        const popupTitle = document.getElementById('popup-title');
+        const popupDescription = document.getElementById('popup-description');
+        
+        // 이미지 아이템 생성
+        function createSliderItems() {
+            images.forEach(image => {
+                const imgContainer = document.createElement('div');
+                // 반응형 클래스로 변경: 화면 너비에 따라 크기 조절
+                imgContainer.className = 'flex-shrink-0 w-64 h-64 rounded-xl overflow-hidden shadow-md cursor-pointer transform transition-transform duration-300 hover:scale-105';
+                imgContainer.onclick = () => openPopup(image);
+
+                const img = document.createElement('img');
+                img.src = image.url;
+                img.alt = image.title;
+                img.className = 'w-full h-full object-cover';
+                imgContainer.appendChild(img);
+                
+                // 사진 위에 제목을 표시하는 요소 추가
+                const titleOverlay = document.createElement('div');
+                titleOverlay.className = 'absolute bottom-0 left-0 right-0 p-2 bg-black bg-opacity-50 text-white text-center text-sm font-bold truncate rounded-b-xl';
+                titleOverlay.textContent = image.title;
+                imgContainer.appendChild(titleOverlay);
+                
+                sliderContainer.appendChild(imgContainer);
+            });
+        }
+
+        // 팝업 열기 함수
+        function openPopup(image) {
+            popupImage.src = image.url;
+            popupImage.alt = image.title;
+            popupTitle.textContent = image.title;
+            popupDescription.innerHTML = image.description;
+            popupOverlay.classList.add('active');
+        }
+
+        // 팝업 닫기 함수
+        function closePopup() {
+            popupOverlay.classList.remove('active');
+        }
+
+        // 슬라이더 스크롤 함수
+        function scrollSlider(direction) {
+            const scrollAmount = 300; // 스크롤할 거리 (px)
+            const currentScroll = sliderContainer.scrollLeft;
+
+            if (direction === 'next') {
+                sliderContainer.scrollTo({
+                    left: currentScroll + scrollAmount,
+                    behavior: 'smooth'
+                });
+            } else {
+                sliderContainer.scrollTo({
+                    left: currentScroll - scrollAmount,
+                    behavior: 'smooth'
+                });
+            }
+        }
+        
+        // 이벤트 리스너 설정
+        document.addEventListener('DOMContentLoaded', () => {
+            createSliderItems();
+            prevBtn.addEventListener('click', () => scrollSlider('prev'));
+            nextBtn.addEventListener('click', () => scrollSlider('next'));
+            closePopupBtn.addEventListener('click', closePopup);
+            
+            // 팝업 외부 클릭 시 닫기
+            popupOverlay.addEventListener('click', (e) => {
+                if (e.target.id === 'popup-overlay') {
+                    closePopup();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
